@@ -171,7 +171,7 @@ require __DIR__ . '/../includes/header.php';
             </label>
             <label data-stock-inicial-vencimiento style="display:none">
                 Vencimiento del stock inicial
-                <input type="date" name="fecha_vencimiento_inicial">
+                <input type="date" name="fecha_vencimiento_inicial" min="<?= date('Y-m-d') ?>">
             </label>
         </div>
         <div class="form-actions">

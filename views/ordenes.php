@@ -139,7 +139,7 @@ require __DIR__ . '/../includes/header.php';
                                 </td>
                                 <td>
                                     <?php if ((int)$l['controla_vencimiento'] === 1): ?>
-                                        <input type="date" name="vencimiento[<?= (int)$l['id'] ?>]">
+                                        <input type="date" name="vencimiento[<?= (int)$l['id'] ?>]" min="<?= date('Y-m-d') ?>">
                                     <?php else: ?>—<?php endif; ?>
                                 </td>
                             </tr>

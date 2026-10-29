@@ -25,9 +25,7 @@ try {
         $fecha_venc    = trim((string)($_POST['fecha_vencimiento_inicial'] ?? ''));
 
         if ($nombre === '') throw new RuntimeException('Falta el nombre.');
-        if ($stock_min < 0 || $stock_max < 0 || $stock_max < $stock_min) {
-            throw new RuntimeException('Los stock mínimo/máximo no son válidos.');
-        }
+        if ($stock_min < 0 || $stock_max < 0 || $stock_max < $stock_min) throw new RuntimeException('Los stock mínimo/máximo no son válidos.');
         if ($stock_ini < 0) throw new RuntimeException('El stock inicial no puede ser negativo.');
 
         $stmt = $pdo->prepare('SELECT controla_vencimiento FROM categorias WHERE id = ?');
@@ -39,29 +37,23 @@ try {
         $stmt->execute([$proveedor_id]);
         if (!$stmt->fetch()) throw new RuntimeException('Proveedor inválido.');
 
-        if ((int)$controla === 1 && $stock_ini > 0 && $fecha_venc === '') {
-            throw new RuntimeException('La fecha de vencimiento es obligatoria para el stock inicial de esta categoría.');
+        if ((int)$controla === 1 && $stock_ini > 0) {
+            if ($fecha_venc === '') throw new RuntimeException('La fecha de vencimiento es obligatoria para el stock inicial de esta categoría.');
+            
+            // NUEVA VALIDACIÓN: No fechas pasadas
+            if (strtotime($fecha_venc) < strtotime(date('Y-m-d'))) {
+                throw new RuntimeException('La fecha de vencimiento no puede ser pasada.');
+            }
         }
 
         $pdo->beginTransaction();
         try {
-            $pdo->prepare(
-                'INSERT INTO productos
-                    (categoria_id, proveedor_id, nombre, descripcion, stock_actual,
-                     stock_minimo, stock_maximo, unidad_medida, activo)
-                 VALUES (?, ?, ?, ?, 0, ?, ?, ?, 1)'
-            )->execute([$categoria_id, $proveedor_id, $nombre, $descripcion, $stock_min, $stock_max, $unidad]);
+            $pdo->prepare('INSERT INTO productos (categoria_id, proveedor_id, nombre, descripcion, stock_actual, stock_minimo, stock_maximo, unidad_medida, activo) VALUES (?, ?, ?, ?, 0, ?, ?, ?, 1)')
+                ->execute([$categoria_id, $proveedor_id, $nombre, $descripcion, $stock_min, $stock_max, $unidad]);
             $nuevo_id = (int)$pdo->lastInsertId();
 
             if ($stock_ini > 0) {
-                registrar_entrada(
-                    $pdo,
-                    $nuevo_id,
-                    (int)$_SESSION['usuario_id'],
-                    motivo_id($pdo, 'stock_inicial'),
-                    $stock_ini,
-                    ((int)$controla === 1) ? $fecha_venc : null
-                );
+                registrar_entrada($pdo, $nuevo_id, (int)$_SESSION['usuario_id'], motivo_id($pdo, 'stock_inicial'), $stock_ini, ((int)$controla === 1) ? $fecha_venc : null);
             }
             $pdo->commit();
         } catch (Throwable $t) {
@@ -85,7 +77,6 @@ try {
         if ($id <= 0 || $nombre === '') throw new RuntimeException('Datos incompletos.');
         if ($stock_min < 0 || $stock_max < $stock_min) throw new RuntimeException('Stock mínimo/máximo inválido.');
 
-        // Validar que la categoría y proveedor existan
         $stmt = $pdo->prepare('SELECT id FROM categorias WHERE id = ?');
         $stmt->execute([$categoria_id]);
         if (!$stmt->fetch()) throw new RuntimeException('Categoría inválida.');
@@ -94,18 +85,10 @@ try {
         $stmt->execute([$proveedor_id]);
         if (!$stmt->fetch()) throw new RuntimeException('Proveedor inválido.');
 
-        $stmt = $pdo->prepare(
-            'UPDATE productos
-             SET nombre = ?, categoria_id = ?, proveedor_id = ?, descripcion = ?,
-                 stock_minimo = ?, stock_maximo = ?, unidad_medida = ?
-             WHERE id = ? AND activo = 1'
-        );
+        $stmt = $pdo->prepare('UPDATE productos SET nombre = ?, categoria_id = ?, proveedor_id = ?, descripcion = ?, stock_minimo = ?, stock_maximo = ?, unidad_medida = ? WHERE id = ? AND activo = 1');
         $stmt->execute([$nombre, $categoria_id, $proveedor_id, $descripcion, $stock_min, $stock_max, $unidad, $id]);
         
-        // Verificar que se actualizó algo (rowCount)
-        if ($stmt->rowCount() === 0) {
-            throw new RuntimeException('No se pudo actualizar (el producto pudo haber sido dado de baja).');
-        }
+        if ($stmt->rowCount() === 0) throw new RuntimeException('No se pudo actualizar (el producto pudo haber sido dado de baja).');
 
         set_mensaje('ok', 'Producto actualizado.');
         redirigir(BASE_URL . 'views/stock.php');

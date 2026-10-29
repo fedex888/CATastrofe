@@ -76,7 +76,7 @@ require __DIR__ . '/../includes/header.php';
             </label>
             <label data-vencimiento-wrapper style="display:none">
                 Fecha de vencimiento
-                <input type="date" name="fecha_vencimiento">
+                <input type="date" name="fecha_vencimiento" min="<?= date('Y-m-d') ?>">
             </label>
         </div>
         <div class="form-actions">
@@ -96,8 +96,6 @@ require __DIR__ . '/../includes/header.php';
                 <option value="entrada">Entrada</option>
                 <option value="salida">Salida</option>
             </select>
-            <label>Desde <input type="date" data-filtro="desde"></label>
-            <label>Hasta <input type="date" data-filtro="hasta"></label>
         </div>
         <div class="table-wrap">
             <table class="table" data-filtro-tabla>
@@ -110,9 +108,7 @@ require __DIR__ . '/../includes/header.php';
                 </thead>
                 <tbody>
                 <?php foreach ($historial as $mv): ?>
-                    <tr data-nombre="<?= e($mv['producto'] . ' ' . $mv['motivo']) ?>"
-                        data-tipo="<?= e($mv['tipo']) ?>"
-                        data-fecha="<?= e(date('Y-m-d', strtotime($mv['fecha']))) ?>">
+                    <tr data-nombre="<?= e($mv['producto'] . ' ' . $mv['motivo']) ?>" data-tipo="<?= e($mv['tipo']) ?>">
                         <td class="nowrap"><?= e(date('d/m/Y H:i', strtotime($mv['fecha']))) ?></td>
                         <td><?= e($mv['producto']) ?></td>
                         <td><span class="badge badge-<?= e($mv['tipo']) ?>"><?= e($mv['tipo']) ?></span></td>
