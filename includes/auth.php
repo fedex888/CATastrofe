@@ -33,7 +33,7 @@ function requerir_login(): void
         session_regenerate_id(true);
         $_SESSION['mensaje'] = [
             'tipo'  => 'error',
-            'texto' => 'Tu cuenta ya no está habilitada. Consultá con el encargado.',
+            'texto' => 'Tu cuenta ya no está habilitada. Consultá con gerencia.',
         ];
         header('Location: ' . BASE_URL . 'views/login.php');
         exit;
@@ -43,10 +43,10 @@ function requerir_login(): void
     $_SESSION['rol']    = $u['rol'];
 }
 
-function requerir_encargado(): void
+function requerir_rol(string $rol): void
 {
     requerir_login();
-    if (($_SESSION['rol'] ?? '') !== 'encargado') {
+    if (($_SESSION['rol'] ?? '') !== $rol) {
         $_SESSION['mensaje'] = [
             'tipo'  => 'error',
             'texto' => 'No tenés permisos para realizar esa acción.',
@@ -54,6 +54,18 @@ function requerir_encargado(): void
         header('Location: ' . BASE_URL . 'views/dashboard.php');
         exit;
     }
+}
+
+/** Operaciones del depósito: stock, proveedores, órdenes y movimientos. */
+function requerir_encargado(): void
+{
+    requerir_rol('encargado');
+}
+
+/** Gestión de usuarios: solo gerencia. */
+function requerir_gerencia(): void
+{
+    requerir_rol('gerencia');
 }
 
 function csrf_token(): string

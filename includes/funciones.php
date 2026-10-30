@@ -26,6 +26,25 @@ function largo_texto(string $s): int
     return (int)preg_match_all('/./su', $s);
 }
 
+const PASSWORD_MIN = 6;
+
+/** Nombre y usuario de login (el HTML solo repite estas reglas por comodidad). */
+function validar_nombre_usuario(string $nombre, string $usuario): void
+{
+    if ($nombre === '' || $usuario === '') throw new RuntimeException('Todos los campos son obligatorios.');
+    if (largo_texto($nombre) > 100) throw new RuntimeException('El nombre es demasiado largo (máximo 100 caracteres).');
+    if (!preg_match('/^[A-Za-z0-9_]{1,50}$/', $usuario)) {
+        throw new RuntimeException('El usuario solo puede tener letras, números y guion bajo (máximo 50).');
+    }
+}
+
+function validar_password_nueva(string $password): void
+{
+    if (largo_texto($password) < PASSWORD_MIN) {
+        throw new RuntimeException('La contraseña debe tener al menos ' . PASSWORD_MIN . ' caracteres.');
+    }
+}
+
 /**
  * Valida una fecha de vencimiento: debe existir en el calendario y no ser pasada.
  * Lanza RuntimeException (mensaje apto para mostrar al usuario).

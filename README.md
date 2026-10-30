@@ -13,12 +13,14 @@ El objetivo del proyecto es reemplazar los controles manuales por una plataforma
 
 ## ✨ Características Principales
 
-*   **Autenticación y Roles:** Sistema de login seguro con contraseñas hasheadas (password_hash). Dos roles definidos: **Encargado** (acceso total y operaciones) y **Gerencia** (solo lectura y reportes).
+*   **Autenticación y Roles:** Sistema de login seguro con contraseñas hasheadas (password_hash). Dos roles definidos: **Encargado** (opera el depósito: stock, proveedores, órdenes y movimientos) y **Gerencia** (solo lectura y reportes, y es la única que crea y gestiona usuarios).
 *   **Gestión de Stock:** Catálogo de productos con alertas visuales (crítico, próximo a agotarse, normal). Cálculo automático de cantidad sugerida descontando lo que ya está en pedido.
 *   **Movimientos Inmutables:** Registro de entradas y salidas con control estricto para evitar stock negativo. Los errores se corrigen con movimientos de ajuste, no editando el historial.
 *   **Órdenes de Compra:** Emisión de pedidos a proveedores con recepción atómica (transaccional). Soporta entregas parciales y calcula desvíos de tiempo.
 *   **Reportes Dinámicos:** Reportes de productos más comprados, cumplimiento de proveedores y control de vencimientos (estimación PEPS), con filtros en tiempo real que no recargan la página.
-*   **Gestión de Usuarios:** Módulo exclusivo para el Encargado: alta, edición, cambio de contraseña y baja/alta de usuarios, con su rol. Los cambios rigen de inmediato (ver "Arquitectura y Seguridad"). Nadie puede darse de baja ni cambiarse el rol a sí mismo, así que siempre queda al menos un Encargado activo.
+*   **Gestión de Usuarios:** Módulo exclusivo de Gerencia: alta, edición, cambio de contraseña, baja/alta de usuarios y asignación de rol. El Encargado no ve este panel (ni por menú ni por URL). Los cambios rigen de inmediato (ver "Arquitectura y Seguridad"). Nadie puede darse de baja ni cambiarse el rol a sí mismo, así que siempre queda al menos una persona de Gerencia activa.
+*   **Mi perfil:** cada persona (Encargado o Gerencia) edita solo su propia cuenta: nombre, usuario y contraseña. Cambiar el usuario o la contraseña exige confirmar la contraseña actual. Desde ahí no se puede tocar el rol, el estado ni la cuenta de otra persona (el id sale de la sesión, no del formulario).
+*   **Login:** la pantalla de ingreso aclara "¿No tenés un usuario? Pedile uno a gerencia", porque no hay registro público.
 
 ## 🔒 Arquitectura y Seguridad
 
@@ -31,7 +33,7 @@ El sistema fue diseñado pensando en las buenas prácticas de seguridad y la int
 *   **Validación en el servidor:** fechas de vencimiento (deben existir en el calendario y no ser pasadas), roles, unidades de medida, formato de usuario/email y largo mínimo de contraseña (6) se validan en PHP; el HTML solo las repite por comodidad. No se puede dar de baja un proveedor con productos activos u órdenes pendientes, ni un producto que está en una orden pendiente.
 *   **Integridad Transaccional:** El stock (stock_actual) solo se modifica junto con la creación de un movimiento, y siempre dentro de un bloque beginTransaction() / commit().
 *   **Baja Lógica:** Los productos y proveedores nunca se borran físicamente (se marcan como activo = 0) para no romper el historial de auditoría.
-*   **Validación en 3 Capas:** Interfaz de usuario (oculta botones), Backend (funciones requerir_login() y requerir_encargado()) y Base de datos (restricciones CHECK y claves foráneas).
+*   **Validación en 3 Capas:** Interfaz de usuario (oculta botones), Backend (funciones requerir_login(), requerir_encargado() y requerir_gerencia()) y Base de datos (restricciones CHECK y claves foráneas).
 
 ## 🚀 Instalación y Ejecución Local
 
@@ -56,10 +58,10 @@ El archivo `database.sql` carga dos usuarios por defecto para probar el sistema:
 
 | Rol | Usuario | Contraseña | Permisos |
 | :--- | :--- | :--- | :--- |
-| **Encargado** | `encargado` | `password` | Puede crear, editar, recibir órdenes, registrar movimientos y gestionar usuarios. |
-| **Gerencia** | `gerencia` | `password` | Solo puede visualizar (Dashboard, Stock, Movimientos y Reportes). |
+| **Encargado** | `encargado` | `password` | Puede crear, editar, recibir órdenes y registrar movimientos. Edita solo su propio perfil. |
+| **Gerencia** | `gerencia` | `password` | Visualiza (Dashboard, Stock, Movimientos y Reportes) y es la única que crea y gestiona usuarios. |
 
-*Son credenciales de demostración: cambialas si el sistema sale del entorno local. Los usuarios nuevos creados desde el módulo de usuarios requieren una contraseña de al menos 6 caracteres.*
+*Son credenciales de demostración: cambialas si el sistema sale del entorno local. Los usuarios nuevos los crea Gerencia desde el módulo de usuarios y requieren una contraseña de al menos 6 caracteres.*
 
 *Si necesitás generar un nuevo hash de contraseña para un usuario manual, podés usar en consola:*
 `C:\xampp\php\php.exe -r "echo password_hash('nueva_clave', PASSWORD_DEFAULT);"`

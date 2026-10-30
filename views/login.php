@@ -39,6 +39,7 @@ $m = mensaje_flash();
         </label>
         <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
     </form>
+    <p class="login-help">¿No tenés un usuario? Pedile uno a gerencia.</p>
 </div>
 </body>
 </html>

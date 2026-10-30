@@ -12,8 +12,8 @@ $menu = [
 ];
 $reportes = ['archivo' => 'reportes.php', 'url' => BASE_URL . 'views/reportes.php', 'label' => 'Reportes', 'icon' => '📈'];
 
-if ($es_gerencia) {
-    // Gerencia no gestiona usuarios.
+if (!$es_gerencia) {
+    // Solo gerencia gestiona usuarios; el encargado edita su cuenta desde "Mi perfil".
     $menu = array_values(array_filter($menu, function ($i) { return $i['archivo'] !== 'usuarios.php'; }));
 }
 $menu_final = $es_gerencia ? array_merge([$reportes], $menu) : array_merge($menu, [$reportes]);

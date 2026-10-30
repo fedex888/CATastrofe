@@ -180,7 +180,7 @@ C:\xampp\htdocs\catastrofe\
 │   └── db.php                  # Configuración (BASE_URL, zona horaria, APP_DEBUG) y conexión PDO
 │
 ├── includes/
-│   ├── auth.php                # Sesión, control de rol (requerir_login / requerir_encargado) y token CSRF
+│   ├── auth.php                # Sesión, control de rol (requerir_login / requerir_encargado / requerir_gerencia) y token CSRF
 │   ├── funciones.php           # Helpers (e(), estado_stock(), cantidad_sugerida(), mensajes) y operaciones de stock (registrar_entrada / registrar_salida)
 │   ├── header.php              # Apertura HTML, estilos y barra superior
 │   ├── sidebar.php             # Menú lateral dinámico según rol
@@ -204,7 +204,8 @@ C:\xampp\htdocs\catastrofe\
 │   ├── orden_nueva.php         # Emisión de órdenes con cantidades sugeridas
 │   ├── movimientos.php         # Registro e historial de entradas y salidas
 │   ├── reportes.php            # Tablas dinámicas (compras, proveedores, vencimientos)
-│   └── usuarios.php            # Gestión de usuarios (solo Encargado)
+│   ├── usuarios.php            # Gestión de usuarios (solo Gerencia)
+│   └── perfil.php              # Mi perfil: cada persona edita su propia cuenta
 │
 └── api/                        # Acciones PHP que procesan formularios (POST)
     ├── accion_login.php
@@ -212,7 +213,8 @@ C:\xampp\htdocs\catastrofe\
     ├── accion_proveedor.php
     ├── accion_movimiento.php
     ├── accion_orden.php
-    └── accion_usuario.php
+    ├── accion_usuario.php      # Alta, edición y baja de usuarios (solo Gerencia)
+    └── accion_perfil.php       # Edición de la propia cuenta (cualquier rol)
 ```
 
 ---
@@ -231,13 +233,14 @@ C:\xampp\htdocs\catastrofe\
 | Crear, editar y dar de baja productos y proveedores | Sí | No |
 | Registrar movimientos de depósito | Sí | No |
 | Emitir, recibir y cancelar órdenes de compra | Sí | No |
-| Gestionar usuarios (alta, edición, baja) | Sí | No |
+| Gestionar usuarios (alta, edición, baja, roles) | No | Sí |
+| Editar el propio perfil (nombre, usuario, contraseña) | Sí | Sí |
 
 - **Reportes:** los ven ambos roles (el Encargado los necesita para decidir compras); en el menú de Gerencia aparecen primero.
 - **Auditoría:** el historial de `movimientos.php` (quién, qué, cuándo, motivo y orden asociada) es la traza de auditoría, visible para ambos roles. No hay un módulo aparte.
 - **Tres capas de control:**
   1. La interfaz oculta los botones y formularios que el rol no puede usar (comodidad).
-  2. `requerir_login()` y `requerir_encargado()` al inicio de cada vista y de cada `api/accion_*.php`. Es la barrera real: ocultar un botón no es seguridad.
+  2. `requerir_login()`, `requerir_encargado()` o `requerir_gerencia()` al inicio de cada vista y de cada `api/accion_*.php` (los usuarios solo los gestiona Gerencia; `perfil.php` y `accion_perfil.php` piden solo sesión y operan siempre sobre la cuenta de la sesión). Es la barrera real: ocultar un botón no es seguridad.
   3. Token CSRF en todos los formularios, verificado con `hash_equals()` en cada acción.
 - **Lista de seguridad aplicada en todo el código:**
   - Contraseñas con `password_hash()` y `password_verify()`; nunca en texto plano.
@@ -345,7 +348,7 @@ El trabajo se organiza en etapas encadenadas (cada una depende de la anterior), 
 
 1. **Roles y permisos:**
    - Como `Encargado`: cargar productos, registrar movimientos y emitir, recibir y cancelar órdenes.
-   - Como `Gerencia`: solo visualiza catálogos, movimientos y reportes. Además de no ver los botones, entrar por URL a `orden_nueva.php` o enviar un POST a cualquier `api/accion_*.php` debe ser rechazado sin cambios en la base de datos.
+   - Como `Gerencia`: visualiza catálogos, movimientos y reportes, y gestiona usuarios. Además de no ver los botones, entrar por URL a `orden_nueva.php` o enviar un POST a `api/accion_producto|proveedor|orden|movimiento.php` debe ser rechazado sin cambios en la base de datos. Como `Encargado`: no aparece "Usuarios" en el menú, `usuarios.php` y un POST a `accion_usuario.php` son rechazados, y desde "Mi perfil" solo se modifica la propia cuenta.
 2. **Seguridad:** el login con `' OR '1'='1` falla; un producto llamado `<script>alert(1)</script>` se muestra como texto; un POST sin token CSRF es rechazado; en `usuarios` las contraseñas son hashes.
 3. **Ciclo completo de stock:**
    - Registrar una salida que haga caer el stock por debajo del mínimo y constatar la alerta visual inmediata.

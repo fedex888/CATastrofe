@@ -359,6 +359,12 @@ dialog::backdrop { background: rgba(15, 23, 42, .55); }
 .login-brand .brand-icon { margin: 0 auto 8px; }
 .login-brand h1 { font-size: 1.4rem; margin: 6px 0 2px; }
 .login-brand p { margin: 0; color: var(--gris-texto); font-size: .9rem; }
+.login-help { margin: 18px 0 0; text-align: center; color: var(--gris-texto); font-size: .88rem; }
+
+/* ---------- Perfil ---------- */
+.perfil-card { max-width: 620px; }
+.perfil-card h3 { margin: 0 0 4px; }
+.perfil-card hr { border: 0; border-top: 1px solid var(--gris-borde); margin: 22px 0 18px; }
 
 /* ---------- Orden card ---------- */
 .orden-card {

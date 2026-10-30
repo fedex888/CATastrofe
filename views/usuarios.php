@@ -2,9 +2,9 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/funciones.php';
-requerir_encargado(); // módulo exclusivo del Encargado
+requerir_gerencia(); // módulo exclusivo de Gerencia
 
-$es_encargado = true;
+$yo = (int)$_SESSION['usuario_id'];
 
 $usuarios = $pdo->query("SELECT id, nombre, usuario, rol, activo, fecha_creacion FROM usuarios ORDER BY activo DESC, id ASC")->fetchAll();
 
@@ -14,11 +14,9 @@ require __DIR__ . '/../includes/header.php';
 <div class="flex-between mb-3">
     <div>
         <h1>Gestor de Usuarios</h1>
-        <p class="muted">Cuentas de acceso a CATástrofe Petshop.</p>
+        <p class="muted">Cuentas de acceso a CATástrofe Petshop. Solo Gerencia puede crearlas y gestionarlas.</p>
     </div>
-    <?php if ($es_encargado): ?>
-        <button class="btn btn-primary" data-dialog-open="dialog-nuevo-usuario">+ Nuevo usuario</button>
-    <?php endif; ?>
+    <button class="btn btn-primary" data-dialog-open="dialog-nuevo-usuario">+ Nuevo usuario</button>
 </div>
 
 <div class="table-wrap">
@@ -29,21 +27,21 @@ require __DIR__ . '/../includes/header.php';
             </tr>
         </thead>
         <tbody>
-        <?php foreach ($usuarios as $u): ?>
+        <?php foreach ($usuarios as $u): $es_yo = ((int)$u['id'] === $yo); ?>
             <tr class="<?= $u['activo'] ? '' : 'muted' ?>">
                 <td><?= (int)$u['id'] ?></td>
-                <td><strong><?= e($u['nombre']) ?></strong></td>
+                <td><strong><?= e($u['nombre']) ?></strong><?= $es_yo ? ' <span class="muted">(vos)</span>' : '' ?></td>
                 <td><code><?= e($u['usuario']) ?></code></td>
                 <td><span class="badge badge-<?= $u['rol'] === 'encargado' ? 'entrada' : 'pendiente' ?>"><?= e($u['rol']) ?></span></td>
                 <td><span class="badge badge-<?= $u['activo'] ? 'normal' : 'cancelada' ?>"><?= $u['activo'] ? 'Activo' : 'Inactivo' ?></span></td>
                 <td>
-                    <?php if ($es_encargado): ?>
+                    <?php if ($es_yo): ?>
+                        <a class="btn btn-sm btn-ghost" href="<?= BASE_URL ?>views/perfil.php">Mi perfil</a>
+                    <?php else: ?>
                         <div class="flex">
-                            <?php 
-                            $dataUser = json_encode(['id' => $u['id'], 'nombre' => $u['nombre'], 'usuario' => $u['usuario'], 'rol' => $u['rol']]);
-                            ?>
+                            <?php $dataUser = json_encode(['id' => $u['id'], 'nombre' => $u['nombre'], 'usuario' => $u['usuario'], 'rol' => $u['rol']]); ?>
                             <button class="btn btn-sm btn-ghost" data-editar-usuario="<?= e($dataUser) ?>">Editar</button>
-                            
+
                             <form action="<?= BASE_URL ?>api/accion_usuario.php" method="post" style="display:inline">
                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                 <input type="hidden" name="accion" value="<?= $u['activo'] ? 'baja' : 'alta' ?>">
@@ -61,7 +59,6 @@ require __DIR__ . '/../includes/header.php';
     </table>
 </div>
 
-<?php if ($es_encargado): ?>
 <dialog id="dialog-nuevo-usuario">
     <div class="dialog-header">
         <h3>Nuevo usuario</h3>
@@ -123,6 +120,5 @@ document.querySelectorAll('[data-editar-usuario]').forEach(function (btn) {
     });
 });
 </script>
-<?php endif; ?>
 
 <?php require __DIR__ . '/../includes/footer.php'; ?>

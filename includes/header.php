@@ -25,6 +25,7 @@ $m = mensaje_flash();
             <div class="user-nombre"><?= e($_SESSION['nombre'] ?? '') ?></div>
             <div class="user-rol"><?= e($_SESSION['rol'] ?? '') ?></div>
         </div>
+        <a class="btn btn-ghost" href="<?= BASE_URL ?>views/perfil.php">Mi perfil</a>
         <form action="<?= BASE_URL ?>views/logout.php" method="post" style="display:inline">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <button type="submit" class="btn btn-ghost">Cerrar sesión</button>
