@@ -15,10 +15,32 @@ if (session_status() === PHP_SESSION_NONE) {
 
 function requerir_login(): void
 {
+    global $pdo;
+
     if (empty($_SESSION['usuario_id'])) {
         header('Location: ' . BASE_URL . 'views/login.php');
         exit;
     }
+
+    // Se revalida contra la base en cada request: si el usuario fue dado de baja
+    // o le cambiaron el rol, el cambio rige de inmediato (no recién al volver a ingresar).
+    $stmt = $pdo->prepare('SELECT nombre, rol, activo FROM usuarios WHERE id = ?');
+    $stmt->execute([(int)$_SESSION['usuario_id']]);
+    $u = $stmt->fetch();
+
+    if (!$u || (int)$u['activo'] !== 1) {
+        $_SESSION = [];
+        session_regenerate_id(true);
+        $_SESSION['mensaje'] = [
+            'tipo'  => 'error',
+            'texto' => 'Tu cuenta ya no está habilitada. Consultá con el encargado.',
+        ];
+        header('Location: ' . BASE_URL . 'views/login.php');
+        exit;
+    }
+
+    $_SESSION['nombre'] = $u['nombre'];
+    $_SESSION['rol']    = $u['rol'];
 }
 
 function requerir_encargado(): void

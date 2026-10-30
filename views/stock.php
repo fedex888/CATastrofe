@@ -67,7 +67,8 @@ require __DIR__ . '/../includes/header.php';
             <?php foreach ($productos as $p):
                 $estado = estado_stock($p['stock_actual'], $p['stock_minimo']);
                 $sug = cantidad_sugerida($p['stock_actual'], $p['stock_maximo'], $p['en_pedido']);
-                $cubre = ((float)$p['en_pedido']) >= ((float)$p['stock_maximo'] - (float)$p['stock_actual']);
+                $cubre = ((float)$p['en_pedido']) > 0
+                    && ((float)$p['en_pedido']) >= ((float)$p['stock_maximo'] - (float)$p['stock_actual']);
                 $mostrarBoton = $es_encargado
                     && in_array($estado, ['critico','proximo'], true)
                     && $sug > 0

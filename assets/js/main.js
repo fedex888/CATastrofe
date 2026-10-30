@@ -30,6 +30,9 @@
     // Cerrar al hacer click en el backdrop
     document.querySelectorAll('dialog').forEach(function (dlg) {
         dlg.addEventListener('click', function (ev) {
+            // Solo el click directo sobre el <dialog> (el backdrop). Los clicks generados por teclado
+            // (Enter, Espacio) llegan con coordenadas 0,0 desde un botón interno y no deben cerrarlo.
+            if (ev.target !== dlg) return;
             var r = dlg.getBoundingClientRect();
             if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) {
                 dlg.close();

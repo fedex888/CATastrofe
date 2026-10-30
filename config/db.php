@@ -38,6 +38,8 @@ try {
             PDO::ATTR_EMULATE_PREPARES   => false,
         ]
     );
+    // La hora de MySQL (NOW, CURDATE) debe coincidir con la de PHP (Argentina, sin horario de verano).
+    $pdo->exec("SET time_zone = '-03:00'");
 } catch (PDOException $e) {
     error_log('DB connection error: ' . $e->getMessage());
     if (APP_DEBUG) {

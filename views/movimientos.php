@@ -96,7 +96,10 @@ require __DIR__ . '/../includes/header.php';
                 <option value="entrada">Entrada</option>
                 <option value="salida">Salida</option>
             </select>
+            <label>Desde <input type="date" data-filtro="desde"></label>
+            <label>Hasta <input type="date" data-filtro="hasta"></label>
         </div>
+        <p class="hint">Se muestran los últimos 200 movimientos.</p>
         <div class="table-wrap">
             <table class="table" data-filtro-tabla>
                 <thead>
@@ -108,7 +111,7 @@ require __DIR__ . '/../includes/header.php';
                 </thead>
                 <tbody>
                 <?php foreach ($historial as $mv): ?>
-                    <tr data-nombre="<?= e($mv['producto'] . ' ' . $mv['motivo']) ?>" data-tipo="<?= e($mv['tipo']) ?>">
+                    <tr data-nombre="<?= e($mv['producto'] . ' ' . $mv['motivo']) ?>" data-tipo="<?= e($mv['tipo']) ?>" data-fecha="<?= e(substr((string)$mv['fecha'], 0, 10)) ?>">
                         <td class="nowrap"><?= e(date('d/m/Y H:i', strtotime($mv['fecha']))) ?></td>
                         <td><?= e($mv['producto']) ?></td>
                         <td><span class="badge badge-<?= e($mv['tipo']) ?>"><?= e($mv['tipo']) ?></span></td>

@@ -36,10 +36,7 @@ try {
     if ($tipo === 'entrada' && (int)$prod['controla_vencimiento'] === 1) {
         if ($fecha_venc === '') throw new RuntimeException('La fecha de vencimiento es obligatoria.');
         
-        // NUEVA VALIDACIÓN: No fechas pasadas
-        if (strtotime($fecha_venc) < strtotime(date('Y-m-d'))) {
-            throw new RuntimeException('La fecha de vencimiento no puede ser una fecha pasada.');
-        }
+        validar_vencimiento($fecha_venc);
     } else {
         $fecha_venc = null;
     }
@@ -60,8 +57,8 @@ try {
     set_mensaje('ok', 'Movimiento registrado correctamente.');
     redirigir(BASE_URL . 'views/movimientos.php');
 } catch (Throwable $t) {
-    error_log('Error en accion_movimiento: ' . $t->getMessage());
-    $msg = (defined('APP_DEBUG') && APP_DEBUG) ? $t->getMessage() : 'Ocurrió un error al procesar el movimiento.';
+    // Errores de validación: se muestran; errores técnicos: se registran y se oculta el detalle.
+    $msg = mensaje_error($t);
     set_mensaje('error', $msg);
     redirigir(BASE_URL . 'views/movimientos.php');
 }

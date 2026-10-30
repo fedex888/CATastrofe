@@ -2,9 +2,9 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/funciones.php';
-requerir_login();
+requerir_encargado(); // módulo exclusivo del Encargado
 
-$es_encargado = ($_SESSION['rol'] ?? '') === 'encargado';
+$es_encargado = true;
 
 $usuarios = $pdo->query("SELECT id, nombre, usuario, rol, activo, fecha_creacion FROM usuarios ORDER BY activo DESC, id ASC")->fetchAll();
 
@@ -42,7 +42,7 @@ require __DIR__ . '/../includes/header.php';
                             <?php 
                             $dataUser = json_encode(['id' => $u['id'], 'nombre' => $u['nombre'], 'usuario' => $u['usuario'], 'rol' => $u['rol']]);
                             ?>
-                            <button class="btn btn-sm btn-ghost" data-editar-usuario='<?= $dataUser ?>'>Editar</button>
+                            <button class="btn btn-sm btn-ghost" data-editar-usuario="<?= e($dataUser) ?>">Editar</button>
                             
                             <form action="<?= BASE_URL ?>api/accion_usuario.php" method="post" style="display:inline">
                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
@@ -75,7 +75,7 @@ require __DIR__ . '/../includes/header.php';
             <label>Usuario de login <input type="text" name="usuario" required maxlength="50" pattern="[a-zA-Z0-9_]+"></label>
         </div>
         <div class="form-row">
-            <label>Contraseña <input type="password" name="password" required minlength="4"></label>
+            <label>Contraseña <input type="password" name="password" required minlength="6"></label>
             <label>Rol <select name="rol" required><option value="encargado">Encargado</option><option value="gerencia">Gerencia</option></select></label>
         </div>
         <div class="form-actions">
@@ -99,7 +99,7 @@ require __DIR__ . '/../includes/header.php';
             <label>Usuario de login <input type="text" name="usuario" required maxlength="50" pattern="[a-zA-Z0-9_]+"></label>
         </div>
         <div class="form-row">
-            <label>Nueva contraseña (opcional) <input type="password" name="password" minlength="4" placeholder="Dejar vacío para mantener"></label>
+            <label>Nueva contraseña (opcional) <input type="password" name="password" minlength="6" placeholder="Dejar vacío para mantener"></label>
             <label>Rol <select name="rol" required><option value="encargado">Encargado</option><option value="gerencia">Gerencia</option></select></label>
         </div>
         <div class="form-actions">

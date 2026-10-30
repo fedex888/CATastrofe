@@ -12,6 +12,19 @@ verificar_csrf();
 
 $accion = (string)($_POST['accion'] ?? '');
 
+const PASSWORD_MIN = 6;
+
+/** Validaciones comunes de alta y edición (el HTML solo las repite por comodidad). */
+function validar_datos_usuario(string $nombre, string $usuario, string $rol): void
+{
+    if ($nombre === '' || $usuario === '') throw new RuntimeException('Todos los campos son obligatorios.');
+    if (largo_texto($nombre) > 100) throw new RuntimeException('El nombre es demasiado largo (máximo 100 caracteres).');
+    if (!preg_match('/^[A-Za-z0-9_]{1,50}$/', $usuario)) {
+        throw new RuntimeException('El usuario solo puede tener letras, números y guion bajo (máximo 50).');
+    }
+    if (!in_array($rol, ['encargado', 'gerencia'], true)) throw new RuntimeException('Rol inválido.');
+}
+
 try {
     if ($accion === 'crear') {
         $nombre   = trim((string)($_POST['nombre'] ?? ''));
@@ -19,8 +32,9 @@ try {
         $password = (string)($_POST['password'] ?? '');
         $rol      = (string)($_POST['rol'] ?? 'encargado');
 
-        if ($nombre === '' || $usuario === '' || $password === '') throw new RuntimeException('Todos los campos son obligatorios.');
-        if (!in_array($rol, ['encargado', 'gerencia'], true)) throw new RuntimeException('Rol inválido.');
+        validar_datos_usuario($nombre, $usuario, $rol);
+        if ($password === '') throw new RuntimeException('Todos los campos son obligatorios.');
+        if (largo_texto($password) < PASSWORD_MIN) throw new RuntimeException('La contraseña debe tener al menos ' . PASSWORD_MIN . ' caracteres.');
 
         $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE usuario = ?');
         $stmt->execute([$usuario]);
@@ -41,8 +55,19 @@ try {
         $usuario = trim((string)($_POST['usuario'] ?? ''));
         $rol     = (string)($_POST['rol'] ?? 'encargado');
 
-        if ($id <= 0 || $nombre === '' || $usuario === '') throw new RuntimeException('Datos incompletos.');
-        
+        if ($id <= 0) throw new RuntimeException('Usuario inválido.');
+        validar_datos_usuario($nombre, $usuario, $rol);
+
+        $password = (string)($_POST['password'] ?? '');
+        if ($password !== '' && largo_texto($password) < PASSWORD_MIN) {
+            throw new RuntimeException('La contraseña debe tener al menos ' . PASSWORD_MIN . ' caracteres.');
+        }
+
+        // Nadie se cambia el rol a sí mismo: así siempre queda al menos un encargado activo.
+        if ($id === (int)$_SESSION['usuario_id'] && $rol !== $_SESSION['rol']) {
+            throw new RuntimeException('No podés cambiar tu propio rol. Pedile a otro encargado que lo haga.');
+        }
+
         $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE usuario = ? AND id != ?');
         $stmt->execute([$usuario, $id]);
         if ($stmt->fetch()) throw new RuntimeException('Ese nombre de usuario ya está en uso por otra persona.');
@@ -50,7 +75,6 @@ try {
         $stmt = $pdo->prepare('UPDATE usuarios SET nombre = ?, usuario = ?, rol = ? WHERE id = ?');
         $stmt->execute([$nombre, $usuario, $rol, $id]);
 
-        $password = (string)($_POST['password'] ?? '');
         if ($password !== '') {
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $pdo->prepare('UPDATE usuarios SET password_hash = ? WHERE id = ?')->execute([$hash, $id]);
@@ -74,8 +98,8 @@ try {
 
     throw new RuntimeException('Acción no reconocida.');
 } catch (Throwable $t) {
-    error_log('Error en accion_usuario: ' . $t->getMessage());
-    $msg = (defined('APP_DEBUG') && APP_DEBUG) ? $t->getMessage() : 'Ocurrió un error al procesar el usuario.';
+    // Errores de validación: se muestran; errores técnicos: se registran y se oculta el detalle.
+    $msg = mensaje_error($t);
     set_mensaje('error', $msg);
     redirigir(BASE_URL . 'views/usuarios.php');
 }

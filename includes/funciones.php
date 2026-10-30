@@ -19,6 +19,39 @@ function fecha_valida(string $fecha): bool
 }
 
 /**
+ * Cantidad de caracteres de un texto UTF-8 (sin depender de la extensión mbstring).
+ */
+function largo_texto(string $s): int
+{
+    return (int)preg_match_all('/./su', $s);
+}
+
+/**
+ * Valida una fecha de vencimiento: debe existir en el calendario y no ser pasada.
+ * Lanza RuntimeException (mensaje apto para mostrar al usuario).
+ */
+function validar_vencimiento(string $fecha): void
+{
+    if (!fecha_valida($fecha)) {
+        throw new RuntimeException('La fecha de vencimiento no es válida.');
+    }
+    if ($fecha < date('Y-m-d')) {
+        throw new RuntimeException('La fecha de vencimiento no puede ser una fecha pasada.');
+    }
+}
+
+/**
+ * Valida la unidad de medida contra la lista permitida.
+ */
+function validar_unidad(string $unidad): string
+{
+    if (!in_array($unidad, ['unidad', 'kg', 'litro'], true)) {
+        throw new RuntimeException('Unidad de medida inválida.');
+    }
+    return $unidad;
+}
+
+/**
  * Devuelve el mensaje que se muestra al usuario.
  * Los errores de validación (RuntimeException) se muestran tal cual;
  * los errores técnicos de base de datos se registran y se ocultan.

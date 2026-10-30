@@ -57,6 +57,7 @@ erDiagram
         string usuario UK
         string password_hash
         string rol "encargado o gerencia"
+        boolean activo
         datetime fecha_creacion
     }
     CATEGORIAS {
@@ -136,7 +137,7 @@ erDiagram
 
 | Tabla | Propósito | Reglas clave |
 |---|---|---|
-| `usuarios` | Cuentas de acceso | `rol` es `encargado` o `gerencia`. La contraseña se guarda con `password_hash()` (columna `password_hash`, 255 caracteres). `database.sql` carga 2 usuarios de demo, uno por rol. |
+| `usuarios` | Cuentas de acceso | `rol` es `encargado` o `gerencia`. `activo` (baja lógica: un usuario inactivo no puede ingresar y pierde la sesión abierta). La contraseña se guarda con `password_hash()` (columna `password_hash`, 255 caracteres). `database.sql` carga 2 usuarios de demo, uno por rol. |
 | `categorias` | Alimento, arena, accesorios, higiene, juguetes | `controla_vencimiento` = 1 en alimento e higiene. Lista fija cargada por SQL. |
 | `proveedores` | Ficha técnica del proveedor | `plazo_entrega_dias` (plazo habitual de entrega) y `activo` (baja lógica). |
 | `productos` | Catálogo y control de stock | `stock_minimo`, `stock_maximo` y `stock_actual`. Un proveedor habitual por producto. `activo` (baja lógica). |
@@ -162,7 +163,7 @@ erDiagram
 - 4 proveedores, uno de ellos con entregas tardías.
 - 5 órdenes con fechas relativas al día de la importación: dos recibidas a tiempo, una recibida con demora y entrega incompleta, una pendiente (ya demorada) y una cancelada.
 - Movimientos de entrada y salida con los que se calcula el stock cargado (así el invariante se cumple desde el primer momento), incluyendo lotes vencidos y por vencer (30, 60 y 90 días).
-- 2 usuarios de demo (`encargado` y `gerencia`). Las contraseñas ya vienen hasheadas en el script y se indican en `LEEME.md`; para cambiarlas se genera un hash nuevo con `C:\xampp\php\php.exe -r "echo password_hash('clave', PASSWORD_DEFAULT);"`.
+- 2 usuarios de demo (`encargado` y `gerencia`). Las contraseñas ya vienen hasheadas en el script y se indican en `README.md`; para cambiarlas se genera un hash nuevo con `C:\xampp\php\php.exe -r "echo password_hash('clave', PASSWORD_DEFAULT);"`.
 
 ---
 
@@ -173,7 +174,7 @@ C:\xampp\htdocs\catastrofe\
 │
 ├── index.php                   # Punto de entrada: redirige a login o dashboard según la sesión
 ├── database.sql                # Estructura, restricciones y datos de prueba (importar en phpMyAdmin)
-├── LEEME.md                    # Instalación, usuarios de demo y guion de demostración
+├── README.md                    # Instalación, usuarios de demo y guion de demostración
 │
 ├── config/
 │   └── db.php                  # Configuración (BASE_URL, zona horaria, APP_DEBUG) y conexión PDO
@@ -202,14 +203,16 @@ C:\xampp\htdocs\catastrofe\
 │   ├── ordenes.php             # Listado de órdenes, recepción y cancelación
 │   ├── orden_nueva.php         # Emisión de órdenes con cantidades sugeridas
 │   ├── movimientos.php         # Registro e historial de entradas y salidas
-│   └── reportes.php            # Tablas dinámicas (compras, proveedores, vencimientos)
+│   ├── reportes.php            # Tablas dinámicas (compras, proveedores, vencimientos)
+│   └── usuarios.php            # Gestión de usuarios (solo Encargado)
 │
 └── api/                        # Acciones PHP que procesan formularios (POST)
     ├── accion_login.php
     ├── accion_producto.php
     ├── accion_proveedor.php
     ├── accion_movimiento.php
-    └── accion_orden.php
+    ├── accion_orden.php
+    └── accion_usuario.php
 ```
 
 ---
@@ -228,6 +231,7 @@ C:\xampp\htdocs\catastrofe\
 | Crear, editar y dar de baja productos y proveedores | Sí | No |
 | Registrar movimientos de depósito | Sí | No |
 | Emitir, recibir y cancelar órdenes de compra | Sí | No |
+| Gestionar usuarios (alta, edición, baja) | Sí | No |
 
 - **Reportes:** los ven ambos roles (el Encargado los necesita para decidir compras); en el menú de Gerencia aparecen primero.
 - **Auditoría:** el historial de `movimientos.php` (quién, qué, cuándo, motivo y orden asociada) es la traza de auditoría, visible para ambos roles. No hay un módulo aparte.
@@ -303,7 +307,7 @@ Resumen general: productos en estado crítico y próximos a agotarse, órdenes p
 | Páginas PHP tradicionales y JavaScript vanilla | Código simple, sin herramientas de compilación, fácil de seguir en la defensa. | Algo de HTML se repite; un framework lo resolvería a costa de más complejidad. |
 | Totales de los reportes recalculados en el navegador | Los filtros (incluida la fecha) responden al instante y sin recargar. | Todos los datos viajan a la página: válido para el volumen de un TP; con muchos datos habría que filtrar en el servidor. |
 
-**Fuera de alcance (decisión deliberada):** ABM de usuarios y categorías (se cargan por SQL), precios y costos, múltiples depósitos, bloqueo de cuenta por intentos fallidos y recuperación de contraseña.
+**Fuera de alcance (decisión deliberada):** ABM de categorías (se cargan por SQL), precios y costos, múltiples depósitos, bloqueo de cuenta por intentos fallidos y recuperación de contraseña.
 
 ---
 
@@ -319,7 +323,7 @@ El trabajo se organiza en etapas encadenadas (cada una depende de la anterior), 
 | **4. Proveedores y movimientos** | ABM de proveedores y registro de entradas y salidas | `proveedores.php` y `accion_proveedor.php`. `movimientos.php` y `accion_movimiento.php` con validación de stock y lotes con vencimiento. Historial. |
 | **5. Órdenes de compra** | Emisión, recepción y cancelación | `orden_nueva.php` (sugerencia que descuenta lo pedido), `ordenes.php` y `accion_orden.php`: emisión, recepción en transacción y cancelación. |
 | **6. Reportes y dashboard** | Análisis y resumen | `reportes.php` con los 3 reportes y filtros interactivos en JS (`reportes.js` y `filtros.js`). `dashboard.php` con KPIs y alertas. |
-| **7. Pruebas, ajustes y manual** | Verificación y entrega | Plan de verificación completo, correcciones y `LEEME.md` con instalación y guion de demostración. |
+| **7. Pruebas, ajustes y manual** | Verificación y entrega | Plan de verificación completo, correcciones y `README.md` con instalación y guion de demostración. |
 
 **Prioridades si el tiempo es corto:**
 1. Lo imprescindible es el núcleo: roles y seguridad, stock con alertas, movimientos, órdenes con recepción en transacción y la consulta de control.

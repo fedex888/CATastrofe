@@ -21,7 +21,7 @@ try {
         $stock_ini     = (float)($_POST['stock_inicial'] ?? 0);
         $stock_min     = (float)($_POST['stock_minimo'] ?? 0);
         $stock_max     = (float)($_POST['stock_maximo'] ?? 0);
-        $unidad        = (string)($_POST['unidad_medida'] ?? 'unidad');
+        $unidad        = validar_unidad((string)($_POST['unidad_medida'] ?? 'unidad'));
         $fecha_venc    = trim((string)($_POST['fecha_vencimiento_inicial'] ?? ''));
 
         if ($nombre === '') throw new RuntimeException('Falta el nombre.');
@@ -39,11 +39,7 @@ try {
 
         if ((int)$controla === 1 && $stock_ini > 0) {
             if ($fecha_venc === '') throw new RuntimeException('La fecha de vencimiento es obligatoria para el stock inicial de esta categoría.');
-            
-            // NUEVA VALIDACIÓN: No fechas pasadas
-            if (strtotime($fecha_venc) < strtotime(date('Y-m-d'))) {
-                throw new RuntimeException('La fecha de vencimiento no puede ser pasada.');
-            }
+            validar_vencimiento($fecha_venc);
         }
 
         $pdo->beginTransaction();
@@ -72,7 +68,7 @@ try {
         $descripcion  = trim((string)($_POST['descripcion'] ?? ''));
         $stock_min    = (float)($_POST['stock_minimo'] ?? 0);
         $stock_max    = (float)($_POST['stock_maximo'] ?? 0);
-        $unidad       = (string)($_POST['unidad_medida'] ?? 'unidad');
+        $unidad       = validar_unidad((string)($_POST['unidad_medida'] ?? 'unidad'));
 
         if ($id <= 0 || $nombre === '') throw new RuntimeException('Datos incompletos.');
         if ($stock_min < 0 || $stock_max < $stock_min) throw new RuntimeException('Stock mínimo/máximo inválido.');
@@ -97,6 +93,17 @@ try {
     if ($accion === 'baja') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) throw new RuntimeException('Producto inválido.');
+
+        $stmt = $pdo->prepare(
+            "SELECT COUNT(*) FROM ordenes_detalle d
+             JOIN ordenes_compra o ON o.id = d.orden_id
+             WHERE d.producto_id = ? AND o.estado = 'pendiente'"
+        );
+        $stmt->execute([$id]);
+        if ((int)$stmt->fetchColumn() > 0) {
+            throw new RuntimeException('No se puede dar de baja: el producto está en una orden pendiente. Recibila o cancelala primero.');
+        }
+
         $pdo->prepare('UPDATE productos SET activo = 0 WHERE id = ?')->execute([$id]);
         set_mensaje('ok', 'Producto dado de baja.');
         redirigir(BASE_URL . 'views/stock.php');
@@ -104,8 +111,8 @@ try {
 
     throw new RuntimeException('Acción no reconocida.');
 } catch (Throwable $t) {
-    error_log('Error en accion_producto: ' . $t->getMessage());
-    $msg = (defined('APP_DEBUG') && APP_DEBUG) ? $t->getMessage() : 'Ocurrió un error inesperado.';
+    // Errores de validación: se muestran; errores técnicos: se registran y se oculta el detalle.
+    $msg = mensaje_error($t);
     set_mensaje('error', $msg);
     redirigir(BASE_URL . 'views/stock.php');
 }

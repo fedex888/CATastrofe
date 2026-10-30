@@ -20,6 +20,7 @@ try {
         $telefono = trim((string)($_POST['telefono'] ?? ''));
         $email    = trim((string)($_POST['email'] ?? ''));
         $plazo    = max(0, (int)($_POST['plazo_entrega_dias'] ?? 7));
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('El email no es válido.');
 
         $pdo->prepare(
             'INSERT INTO proveedores (nombre, contacto, telefono, email, plazo_entrega_dias, activo)
@@ -38,6 +39,7 @@ try {
         $telefono = trim((string)($_POST['telefono'] ?? ''));
         $email    = trim((string)($_POST['email'] ?? ''));
         $plazo    = max(0, (int)($_POST['plazo_entrega_dias'] ?? 7));
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('El email no es válido.');
 
         $stmt = $pdo->prepare(
             'UPDATE proveedores
@@ -57,6 +59,18 @@ try {
     if ($accion === 'baja') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) throw new RuntimeException('Proveedor inválido.');
+
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM productos WHERE proveedor_id = ? AND activo = 1');
+        $stmt->execute([$id]);
+        if ((int)$stmt->fetchColumn() > 0) {
+            throw new RuntimeException('No se puede dar de baja: tiene productos activos. Reasignalos a otro proveedor o dalos de baja primero.');
+        }
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ordenes_compra WHERE proveedor_id = ? AND estado = 'pendiente'");
+        $stmt->execute([$id]);
+        if ((int)$stmt->fetchColumn() > 0) {
+            throw new RuntimeException('No se puede dar de baja: tiene órdenes pendientes. Recibilas o cancelalas primero.');
+        }
+
         $pdo->prepare('UPDATE proveedores SET activo = 0 WHERE id = ?')->execute([$id]);
         set_mensaje('ok', 'Proveedor dado de baja.');
         redirigir(BASE_URL . 'views/proveedores.php');
@@ -64,8 +78,8 @@ try {
 
     throw new RuntimeException('Acción no reconocida.');
 } catch (Throwable $t) {
-    error_log('Error en accion_proveedor: ' . $t->getMessage());
-    $msg = (defined('APP_DEBUG') && APP_DEBUG) ? $t->getMessage() : 'Ocurrió un error inesperado.';
+    // Errores de validación: se muestran; errores técnicos: se registran y se oculta el detalle.
+    $msg = mensaje_error($t);
     set_mensaje('error', $msg);
     redirigir(BASE_URL . 'views/proveedores.php');
 }
