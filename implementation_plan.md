@@ -159,10 +159,11 @@ erDiagram
 ### Datos de Prueba
 
 `database.sql` carga datos suficientes para demostrar todo el sistema sin cargar nada a mano:
-- 18 productos de las 5 categorías, con productos en estado crítico, próximo a agotarse y normal (uno de ellos se vende por kg, con stock decimal).
-- 4 proveedores, uno de ellos con entregas tardías.
-- 5 órdenes con fechas relativas al día de la importación: dos recibidas a tiempo, una recibida con demora y entrega incompleta, una pendiente (ya demorada) y una cancelada.
-- Movimientos de entrada y salida con los que se calcula el stock cargado (así el invariante se cumple desde el primer momento), incluyendo lotes vencidos y por vencer (30, 60 y 90 días).
+- 40 productos de las 5 categorías, con productos en estado crítico, próximo a agotarse y normal (uno de ellos se vende por kg, con stock decimal).
+- 4 proveedores con desempeños distintos (de ~87 % de entregas a tiempo a ~14 %), para que el reporte de cumplimiento muestre diferencias.
+- 165 órdenes de compra a lo largo de ~5 meses, con fechas relativas al día de la importación: 144 recibidas (a tiempo, adelantadas, con demora y con líneas incompletas), 8 pendientes (4 ya demoradas) y 13 canceladas. Más de 400 líneas de detalle.
+- Más de 2.500 movimientos de entrada y salida (recepciones de órdenes, ventas, consumos, devoluciones, ajustes, productos dañados y vencidos) con los que se calcula el stock cargado, así el invariante se cumple desde el primer momento. Incluyen un lote vencido y lotes por vencer en 30, 60 y 90 días.
+- Los datos masivos son de prueba (no reflejan un uso real) y se generan con fechas relativas, así que siempre se ven "recientes" sin importar cuándo se importe el script.
 - 2 usuarios de demo (`encargado` y `gerencia`). Las contraseñas ya vienen hasheadas en el script y se indican en `README.md`; para cambiarlas se genera un hash nuevo con `C:\xampp\php\php.exe -r "echo password_hash('clave', PASSWORD_DEFAULT);"`.
 
 ---
@@ -323,7 +324,7 @@ El trabajo se organiza en etapas encadenadas (cada una depende de la anterior), 
 | **1. Entorno y base de datos** | Proyecto en `htdocs/catastrofe`, base y datos de prueba | `database.sql` con las 8 tablas, restricciones y datos de prueba coherentes. `config/db.php`. La consulta de control de stock devuelve 0 filas. |
 | **2. Autenticación y layout** | Acceso, roles y diseño base | `index.php`, `login.php`, `logout.php` y `accion_login.php`. `auth.php` (roles y CSRF) y `funciones.php`. `header.php`, `sidebar.php`, `footer.php` y `style.css` con la paleta corporativa. |
 | **3. Módulo de stock** | Catálogo y alertas | `stock.php` y `accion_producto.php`: listado con estados y "en pedido", alta con stock inicial, edición y baja lógica. Filtros en JS. |
-| **4. Proveedores y movimientos** | ABM de proveedores y registro de entradas y salidas | `proveedores.php` y `accion_proveedor.php`. `movimientos.php` y `accion_movimiento.php` con validación de stock y lotes con vencimiento. Historial. |
+| **4. Proveedores y movimientos** | ABM de proveedores y registro de entradas y salidas | `proveedores.php` y `accion_proveedor.php`. `movimientos.php` y `accion_movimiento.php` con validación de stock y lotes con vencimiento. Historial (hasta 3.000 movimientos, con filtros por texto, tipo y fechas). |
 | **5. Órdenes de compra** | Emisión, recepción y cancelación | `orden_nueva.php` (sugerencia que descuenta lo pedido), `ordenes.php` y `accion_orden.php`: emisión, recepción en transacción y cancelación. |
 | **6. Reportes y dashboard** | Análisis y resumen | `reportes.php` con los 3 reportes y filtros interactivos en JS (`reportes.js` y `filtros.js`). `dashboard.php` con KPIs y alertas. |
 | **7. Pruebas, ajustes y manual** | Verificación y entrega | Plan de verificación completo, correcciones y `README.md` con instalación y guion de demostración. |

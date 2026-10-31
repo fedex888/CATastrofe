@@ -36,7 +36,7 @@ usort($lotes, function ($a, $b) {
     return $a['dias_restantes'] <=> $b['dias_restantes'];
 });
 
-$desde = date('Y-m-d', strtotime('-90 days'));
+$desde = date('Y-m-d', strtotime('-180 days'));
 $hasta = date('Y-m-d');
 
 $titulo = 'Reportes';

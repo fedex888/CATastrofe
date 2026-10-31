@@ -47,7 +47,7 @@ El sistema fue diseñado pensando en las buenas prácticas de seguridad y la int
     *   Entrá a `http://localhost/phpmyadmin/`.
     *   Andá a la pestaña **Importar**.
     *   Seleccioná el archivo `database.sql` que está en la raíz del proyecto y dale a **Importar**.
-    *   *Nota: El script creará automáticamente la base catastrofe_db (¡borra y recrea la base si ya existía!), las 8 tablas y cargará los datos de prueba: el `stock_actual` de cada producto es exactamente la suma de sus movimientos. Al final del script hay una consulta de control que debe devolver 0 filas.*
+    *   *Nota: El script creará automáticamente la base catastrofe_db (¡borra y recrea la base si ya existía!), las 8 tablas y cargará un historial de prueba de ~5 meses (40 productos, 165 órdenes de compra y más de 2.500 movimientos, todos con fechas relativas al día de la importación): el `stock_actual` de cada producto es exactamente la suma de sus movimientos. Al final del script hay una consulta de control que debe devolver 0 filas.*
 
 4.  **Acceder al Sistema:**
     Abrí tu navegador y entrá a: `http://localhost/catastrofe/`

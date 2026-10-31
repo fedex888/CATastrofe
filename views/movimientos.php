@@ -26,7 +26,7 @@ $historial = $pdo->query(
      JOIN motivos_movimiento mo ON mo.id = m.motivo_id
      LEFT JOIN ordenes_compra o ON o.id = m.orden_id
      ORDER BY m.fecha DESC, m.id DESC
-     LIMIT 200"
+     LIMIT 3000"
 )->fetchAll();
 
 $titulo = 'Movimientos';
@@ -99,7 +99,7 @@ require __DIR__ . '/../includes/header.php';
             <label>Desde <input type="date" data-filtro="desde"></label>
             <label>Hasta <input type="date" data-filtro="hasta"></label>
         </div>
-        <p class="hint">Se muestran los últimos 200 movimientos.</p>
+        <p class="hint">Se muestran los últimos 3000 movimientos.</p>
         <div class="table-wrap">
             <table class="table" data-filtro-tabla>
                 <thead>
